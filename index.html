@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>שעון המילים - הגרסה המלאה</title>
+    <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f4f4f2;
+            --text-color: #1a1a1a;
+            --container-bg: white;
+            --border-color: #d1d1d1;
+        }
+
+        /* מצב לילה */
+        body.dark-mode {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --container-bg: #1e1e1e;
+            --border-color: #333;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Frank Ruhl Libre', serif;
+            color: var(--text-color);
+            transition: all 1.5s ease;
+        }
+
+        .e-ink-screen {
+            background: var(--container-bg);
+            border: 1px solid var(--border-color);
+            padding: 80px 60px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+            transition: all 1.5s ease;
+        }
+
+        #word-clock {
+            font-size: clamp(2.5rem, 10vw, 5.5rem);
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 10px 20px;
+            font-family: 'Frank Ruhl Libre', serif;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+        }
+    </style>
+</head>
+<body>
+
+<div class="e-ink-screen">
+    <div id="clock-container">
+        <div id="word-clock"></div>
+    </div>
+</div>
+
+<div class="controls">
+    <button onclick="speakTime()">הקרא שעה 🔊</button>
+    <button onclick="toggleDarkMode()">החלף מצב 🌓</button>
+</div>
+
+<script>
+    const hoursWords = ["שְׁתֵּים עֶשְׂרֵה", "אַחַת", "שְׁתַּיִם", "שָׁלוֹשׁ", "אַרְבַּע", "חָמֵשׁ", "שֵׁשׁ", "שֶׁבַע", "שְׁמוֹנֶה", "תֵּשַׁע", "עֶשֶׂר", "אַחַת עֶשְׂרֵה"];
+
+    function getMinutesText(m) {
+        if (m === 15) return "רֶבַע";
+        if (m === 30) return "וָחֵצִי";
+        const units = ["", "אַחַת", "שְׁתַּיִם", "שָׁלוֹשׁ", "אַרְבַּע", "חָמֵשׁ", "שֵׁשׁ", "שֶׁבַע", "שְׁמוֹנֶה", "תֵּשַׁע"];
+        const tens = ["", "עֶשֶׂר", "עֶשְׂרִים", "שְׁלֹשִׁים", "אַרְבָּעִים", "חֲמִשִּׁים"];
+        
+        if (m < 10) return units[m] + (m === 1 ? " דַּקָּה" : " דַּקּוֹת");
+        if (m < 20) {
+            const lowTens = ["עֶשֶׂר", "אַחַת עֶשְׂרֵה", "שְׁתֵּים עֶשְׂרֵה", "שְׁלֹשׁ עֶשְׂרֵה", "אַרְבַּע עֶשְׂרֵה", "חֲמֵשׁ עֶשְׂרֵה", "שֵׁשׁ עֶשְׂרֵה", "שְׁבַע עֶשְׂרֵה", "שְׁמוֹנֶה עֶשְׂרֵה", "תְּשַׁע עֶשְׂרֵה"];
+            return lowTens[m-10] + " דַּקּוֹת";
+        }
+        let text = tens[Math.floor(m/10)];
+        if (m % 10 !== 0) text += " וְ" + units[m % 10];
+        return text + " דַּקּוֹת";
+    }
+
+    function getTimeInWords() {
+        const now = new Date();
+        const h24 = now.getHours();
+        const m = now.getMinutes();
+        let result = "";
+        let h = h24 % 12;
+
+        if (h24 === 0 && m === 0) return "חֲצוֹת הַלַּיְלָה";
+
+        if (m >= 40) {
+            const nextH = (h24 + 1) % 12;
+            const diff = 60 - m;
+            if (diff === 15) result = "רֶבַע לְ" + hoursWords[nextH];
+            else if (diff === 10) result = "עֲשָׂרָה לְ" + hoursWords[nextH];
+            else if (diff === 5) result = "חֲמִשָּׁה לְ" + hoursWords[nextH];
+            else result = getMinutesText(diff).replace(" דַּקּוֹת", "") + " לְ" + hoursWords[nextH];
+        } else if (m === 0) {
+            result = hoursWords[h];
+        } else if (m === 15 || m === 30) {
+            result = hoursWords[h] + (m === 15 ? " וָרֶבַע" : " וָחֵצִי");
+        } else {
+            result = hoursWords[h] + " וְ" + getMinutesText(m);
+        }
+
+        let suffix = "";
+        if (h24 >= 5 && h24 < 12) suffix = " בַּבֹּקֶר";
+        else if (h24 >= 12 && h24 < 17) suffix = " בַּצָּהֳרַיִם";
+        else if (h24 >= 17 && h24 < 21) suffix = " בָּעֶרֶב";
+        else if (h24 >= 21 || h24 < 3) suffix = " בַּלַּיְלָה";
+        else suffix = " לִפְנֵי הַבֹּקֶר";
+
+        return result + suffix;
+    }
+
+    function update() {
+        const newText = getTimeInWords();
+        const clockDisplay = document.getElementById('word-clock');
+        if (clockDisplay.innerText !== newText) {
+            clockDisplay.innerText = newText;
+        }
+        
+        // בדיקת מצב לילה אוטומטי
+        const h = new Date().getHours();
+        if (h >= 20 || h < 6) document.body.classList.add('dark-mode');
+        else document.body.classList.remove('dark-mode');
+    }
+
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+    }
+
+    function speakTime() {
+        const text = document.getElementById('word-clock').innerText;
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = text.replace(/[ְֲֳִֵֶַָֹֻּ]/g, ''); // הסרת ניקוד לשיפור ההקראה
+        msg.lang = 'he-IL';
+        msg.rate = 0.9; // הקראה מעט איטית יותר
+        window.speechSynthesis.speak(msg);
+    }
+
+    setInterval(update, 1000);
+    update();
+</script>
+</body>
+</html>
