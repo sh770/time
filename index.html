@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>שעון המילים - הגרסה המלאה</title>
+    <title>שעון המילים - הגרסה הסופית</title>
     <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -13,7 +13,6 @@
             --border-color: #d1d1d1;
         }
 
-        /* מצב לילה */
         body.dark-mode {
             --bg-color: #121212;
             --text-color: #e0e0e0;
@@ -31,7 +30,7 @@
             margin: 0;
             font-family: 'Frank Ruhl Libre', serif;
             color: var(--text-color);
-            transition: all 1.5s ease;
+            transition: all 1.2s ease;
         }
 
         .e-ink-screen {
@@ -41,17 +40,18 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
             text-align: center;
             position: relative;
-            transition: all 1.5s ease;
+            transition: all 1.2s ease;
+            max-width: 90%;
         }
 
         #word-clock {
-            font-size: clamp(2.5rem, 10vw, 5.5rem);
+            font-size: clamp(2rem, 9vw, 5.5rem);
             line-height: 1.1;
             letter-spacing: -0.02em;
         }
 
         .controls {
-            margin-top: 30px;
+            margin-top: 40px;
             display: flex;
             gap: 15px;
         }
@@ -74,11 +74,11 @@
         }
     </style>
 </head>
-<body>
+<body id="main-body">
 
 <div class="e-ink-screen">
     <div id="clock-container">
-        <div id="word-clock"></div>
+        <div id="word-clock">טּוֹעֵן זְמַן...</div>
     </div>
 </div>
 
@@ -146,23 +146,34 @@
         if (clockDisplay.innerText !== newText) {
             clockDisplay.innerText = newText;
         }
-        
-        // בדיקת מצב לילה אוטומטי
-        const h = new Date().getHours();
-        if (h >= 20 || h < 6) document.body.classList.add('dark-mode');
-        else document.body.classList.remove('dark-mode');
+
+        // ניהול מצב תצוגה אוטומטי (רק אם אין העדפה שמורה)
+        if (localStorage.getItem('userTheme') === null) {
+            const h = new Date().getHours();
+            if (h >= 20 || h < 6) document.body.classList.add('dark-mode');
+            else document.body.classList.remove('dark-mode');
+        }
     }
 
     function toggleDarkMode() {
-        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.toggle('dark-mode');
+        // שמירת הבחירה של המשתמש
+        localStorage.setItem('userTheme', isDark ? 'dark' : 'light');
     }
+
+    // טעינת העדפה שמורה בטעינת הדף
+    (function loadSavedTheme() {
+        const savedTheme = localStorage.getItem('userTheme');
+        if (savedTheme === 'dark') document.body.classList.add('dark-mode');
+        else if (savedTheme === 'light') document.body.classList.remove('dark-mode');
+    })();
 
     function speakTime() {
         const text = document.getElementById('word-clock').innerText;
         const msg = new SpeechSynthesisUtterance();
-        msg.text = text.replace(/[ְֲֳִֵֶַָֹֻּ]/g, ''); // הסרת ניקוד לשיפור ההקראה
+        msg.text = text.replace(/[ְֲֳִֵֶַָֹֻּ]/g, ''); // הסרת ניקוד להקראה חלקה
         msg.lang = 'he-IL';
-        msg.rate = 0.9; // הקראה מעט איטית יותר
+        msg.rate = 0.85;
         window.speechSynthesis.speak(msg);
     }
 
